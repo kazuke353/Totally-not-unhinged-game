@@ -286,6 +286,12 @@ export class Barrel extends Entity {
   }
   damage(n, dir, attacker, group, type) {
     if (this.exploding) return;
+    // kicks launch barrels instead of popping them
+    if (type === 'kick' || type === 'punch') {
+      this.lastAttacker = attacker;
+      this.kicked = true;
+      return;
+    }
     this.health -= n;
     this.lastAttacker = attacker;
     if (type === 'bullet' && Math.random() < 0.3) this.game.fx.sparks(this.center(), [0, 1, 0], 3);
@@ -296,9 +302,10 @@ export class Barrel extends Entity {
     }
   }
   knockback(dir, f) {
-    this.body.vel.x += dir[0] * f * 0.7;
-    this.body.vel.z += dir[2] * f * 0.7;
-    this.body.vel.y += Math.max(0, dir[1]) * f * 0.3;
+    this.body.vel.x += dir[0] * f * 1.1;
+    this.body.vel.z += dir[2] * f * 1.1;
+    this.body.vel.y += Math.max(0, dir[1]) * f * 0.35;
+    this.body.onGround = false;
     audio.play('hit_metal', { pos: this.center(), volume: 0.7, rate: 0.6 });
   }
   boom() {
@@ -313,12 +320,23 @@ export class Barrel extends Entity {
     const b = this.body;
     if (Math.abs(b.vel.x) + Math.abs(b.vel.z) > 0.01 || !b.onGround) {
       b.vel.y -= 20 * dt;
+      const sp = Math.hypot(b.vel.x, b.vel.z);
       const res = moveBody(this.game.world, b, dt, { stickDown: false });
       if (b.onGround) {
-        b.vel.x *= Math.max(0, 1 - 3 * dt);
-        b.vel.z *= Math.max(0, 1 - 3 * dt);
+        b.vel.x *= Math.max(0, 1 - 0.8 * dt);
+        b.vel.z *= Math.max(0, 1 - 0.8 * dt);
       }
-      if (res.hitWall) audio.play('hit_metal', { pos: this.center(), volume: 0.4, rate: 0.5 });
+      if (res.hitWall) {
+        audio.play('hit_metal', { pos: this.center(), volume: 0.6, rate: 0.5 });
+        // a kicked barrel slamming into something goes off
+        if (this.kicked && sp > 3.5) {
+          this.exploding = true;
+          this.solid = false;
+          this.game.after(0.05, () => this.boom());
+          return;
+        }
+      }
+      if (sp < 0.5) this.kicked = false;
       this.mesh.rotation.y += (Math.abs(b.vel.x) + Math.abs(b.vel.z)) * dt * 2;
       this._sync();
     }

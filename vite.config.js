@@ -6,6 +6,9 @@ export default defineConfig({
     target: 'es2022',
     chunkSizeWarningLimit: 4000,
     assetsInlineLimit: 0,
+    rollupOptions: {
+      output: { codeSplitting: false },
+    },
   },
   server: { host: true },
 });

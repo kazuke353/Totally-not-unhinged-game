@@ -1,5 +1,6 @@
 /* HALF-HOP UI — late 90s menu chic */
 :root {
+  color-scheme: dark;
   --hud: rgba(255, 168, 32, 0.92);
   --hud-dim: rgba(255, 168, 32, 0.55);
   --hud-red: rgba(255, 50, 30, 0.95);
@@ -197,3 +198,4 @@ kbd { display: inline-block; min-width: 92px; color: var(--menu-hi); font-family
 .hud-boss .b div { height: 100%; background: var(--hud-red); transition: width 0.3s; }
 
 .hud.cutscene .hud-bl, .hud.cutscene .hud-br, .hud.cutscene .hud-cross, .hud.cutscene .hud-fl, .hud.cutscene .hud-use, .hud.cutscene .hud-obj, .hud.cutscene .hud-boss, .hud.cutscene .hud-charge { opacity: 0 !important; transition: opacity 1s; }
+.hud.dead .hud-chapter, .hud.dead .hud-title, .hud.dead .hud-hint, .hud.dead .hud-obj, .hud.dead .hud-sub, .hud.dead .hud-fl, .hud.dead .hud-use { opacity: 0 !important; }

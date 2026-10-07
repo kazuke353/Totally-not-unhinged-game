@@ -298,8 +298,8 @@ export class NPC extends Entity {
     if (this.lightT <= 0) {
       this.lightT = 0.2 + Math.random() * 0.1;
       const L = this.game.sampleLight([b.pos.x, b.pos.y + 0.2, b.pos.z], [0, 0, 0]);
-      this.mat.uniforms.uAmbient.value.set(L[0] * 0.75 + 0.05, L[1] * 0.75 + 0.05, L[2] * 0.75 + 0.05);
-      this.mat.uniforms.uDirCol.value.set(L[0] * 0.5, L[1] * 0.5, L[2] * 0.5);
+      this.mat.uniforms.uAmbient.value.set(L[0] * 0.8 + 0.1, L[1] * 0.8 + 0.1, L[2] * 0.8 + 0.1);
+      this.mat.uniforms.uDirCol.value.set(L[0] * 0.55 + 0.04, L[1] * 0.55 + 0.04, L[2] * 0.55 + 0.04);
     }
     // hit flash
     const t = this.mat.uniforms.uTint.value;

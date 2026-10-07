@@ -269,6 +269,7 @@ export class Player {
     this.alive = false;
     this.deathT = 0;
     this.game.stats.deaths++;
+    this.game.app.sessionDeaths = (this.game.app.sessionDeaths || 0) + 1;
     audio.play('player_die', { volume: 1 });
     this.game.app.hud.death();
     this.flashlight = false;
@@ -404,7 +405,8 @@ export class Player {
         b.height = STAND_H;
       }
     }
-    if (this.crouched && b.onGround) {
+    const headroom = g.world.boxFree([b.pos.x - b.half, b.pos.y + 0.1, b.pos.z - b.half], [b.pos.x + b.half, b.pos.y + STAND_H + 0.3, b.pos.z + b.half], this, true);
+    if (this.crouched && b.onGround && headroom) {
       this.crouchTime += dt;
       const prev = this.charge;
       this.charge = clamp((this.crouchTime - 0.15) / 0.5, 0, 1);
@@ -412,7 +414,7 @@ export class Player {
         audio.play('beep', { volume: 0.25, rate: 1.4 });
         this.chargeSoundPlayed = true;
       }
-    } else if (!this.crouched) {
+    } else if (!this.crouched || !headroom) {
       this.crouchTime = 0;
       if (b.onGround) this.charge = 0;
       this.chargeSoundPlayed = false;

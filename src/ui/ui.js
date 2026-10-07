@@ -129,7 +129,7 @@ export class UI {
     this._btn(list, 'CONTROLS', () => this.controlsMenu(() => this.mainMenu()));
     this._btn(list, 'CREDITS', () => this.creditsMenu());
     this._btn(list, 'QUIT', () => this.app.ui.toast('You can never leave the outback.'));
-    el('div', 'mfoot', wrap, 'v1.0 · Click to capture the mouse · Headphones recommended');
+    el('div', 'mfoot', wrap, 'v1.0 · Keyboard + mouse · Click the game to capture the mouse · Headphones recommended');
   }
 
   toast(t) {

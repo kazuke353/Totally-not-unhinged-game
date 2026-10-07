@@ -120,8 +120,8 @@ class App {
     scene.add(ground);
     const roo = new KangarooModel(shared);
     roo.setWeapon('smg');
-    roo.setLight([0.45, 0.32, 0.3], [0.9, 0.55, 0.35]);
-    roo.mat.uniforms.uDir.value.set(-0.6, 0.3, -0.7).normalize();
+    roo.setLight([0.62, 0.48, 0.45], [0.95, 0.6, 0.38]);
+    roo.mat.uniforms.uDir.value.set(0.3, 0.5, 0.8).normalize();
     scene.add(roo.root);
     this.menu = { scene, roo, sky, t: 0 };
   }
@@ -143,6 +143,7 @@ class App {
   // --------------------------------------------------------------- flow
   async newGame(difficulty) {
     audio.init();
+    this.sessionDeaths = 0;
     this.ui.intro(async () => {
       this.ui.clear();
       await this._startGame(async (g) => {
@@ -186,12 +187,14 @@ class App {
     this.input.exitLock();
     audio.stopSpeech();
     if (audio.ctx) audio.ctx.suspend();
+    this.hud.show(false);
     this.ui.pauseMenu();
   }
   resume() {
     if (this.state !== 'paused') return;
     this.ui.clear();
     this.state = 'playing';
+    this.hud.show(true);
     this.input.enabled = true;
     this.input.clear();
     if (audio.ctx) audio.ctx.resume();
@@ -226,7 +229,7 @@ class App {
     try {
       localStorage.removeItem('halfhop_autosave');
     } catch (e) {}
-    this.ui.ending(this.game.stats, () => this.quitToMenu());
+    this.ui.ending({ ...this.game.stats, deaths: Math.max(this.game.stats.deaths, this.sessionDeaths || 0) }, () => this.quitToMenu());
   }
 
   // --------------------------------------------------------------- console

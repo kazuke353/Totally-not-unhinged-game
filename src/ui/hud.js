@@ -59,7 +59,7 @@ export class Hud {
     this.objList = el('div', 'hud-objlist', this.root);
     this.secretEl = el('div', 'hud-secret', this.root, 'SECRET AREA FOUND!');
     this.headshotEl = el('div', 'hud-headshot', this.root, 'HEADSHOT');
-    this.death = el('div', 'hud-death', this.root, '<div class="t">YOU HAVE DIED</div><div class="s">The outback mourns. Press FIRE to try again.</div>');
+    this.deathEl = el('div', 'hud-death', this.root, '<div class="t">YOU HAVE DIED</div><div class="s">The outback mourns. Press FIRE to try again.</div>');
     this.fps = el('div', 'hud-fps', this.root);
     this.bossEl = el('div', 'hud-boss', this.root, '<div class="n"></div><div class="b"><div></div></div>');
     this.bossBar = this.bossEl.querySelector('.b div');
@@ -74,7 +74,7 @@ export class Hud {
     this.root.style.display = v ? 'block' : 'none';
   }
   reset() {
-    this.death.classList.remove('on');
+    this.deathEl.classList.remove('on');
     this.bossEl.classList.remove('on');
     this.root.classList.remove('dead');
     this.subEl.classList.remove('on');
@@ -166,7 +166,7 @@ export class Hud {
   }
   death() {
     this.root.classList.add('dead');
-    setTimeout(() => this.death.classList.add('on'), 1200);
+    setTimeout(() => this.deathEl.classList.add('on'), 1200);
   }
   showWeaponMenu(slot, id) {
     this.menuT = 1.6;
