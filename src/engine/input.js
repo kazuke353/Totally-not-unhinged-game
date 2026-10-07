@@ -68,11 +68,15 @@ export class Input {
       this.down.clear();
     });
     canvas.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      if (this.enabled && !this.locked && !this.lockFailed) {
+        // the click that captures the mouse doesn't also fire
+        this.requestLock();
+        return;
+      }
       const c = 'Mouse' + e.button;
       if (!this.down.has(c)) this.pressed.add(c);
       this.down.add(c);
-      if (this.enabled && !this.locked && !this.lockFailed) this.requestLock();
-      e.preventDefault();
     });
     window.addEventListener('mouseup', (e) => {
       const c = 'Mouse' + e.button;
@@ -98,29 +102,31 @@ export class Input {
     );
     document.addEventListener('pointerlockchange', () => {
       this.locked = document.pointerLockElement === this.canvas;
+      if (this.locked) this.lockFailures = 0;
       if (this.onLockChange) this.onLockChange(this.locked);
     });
-    document.addEventListener('pointerlockerror', () => {
+    this.lockFailures = 0;
+    document.addEventListener('pointerlockerror', () => this._lockError());
+  }
+
+  // Pointer lock can be refused right after the user pressed Esc (browsers
+  // enforce a short cooldown), so only fall back to free-mouse look after
+  // repeated failures, e.g. inside a frame that forbids pointer lock.
+  _lockError() {
+    this.lockFailures++;
+    if (this.lockFailures >= 3 || !this.canvas.requestPointerLock) {
       this.lockFailed = true;
       this.canvas.style.cursor = 'none';
       if (this.onLockChange) this.onLockChange(false, true);
-    });
+    }
   }
-
   requestLock() {
+    if (!this.canvas.requestPointerLock) return this._lockError();
     try {
-      const p = this.canvas.requestPointerLock({ unadjustedMovement: false });
-      if (p && p.catch) p.catch(() => {
-        try {
-          const p2 = this.canvas.requestPointerLock();
-          if (p2 && p2.catch) p2.catch(() => { this.lockFailed = true; this.canvas.style.cursor = 'none'; });
-        } catch (e) {
-          this.lockFailed = true;
-        }
-      });
+      const p = this.canvas.requestPointerLock();
+      if (p && p.catch) p.catch(() => {});
     } catch (e) {
-      this.lockFailed = true;
-      this.canvas.style.cursor = 'none';
+      this._lockError();
     }
   }
   exitLock() {

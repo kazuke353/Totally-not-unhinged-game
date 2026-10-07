@@ -22,7 +22,7 @@ export class NPC extends Entity {
       half: o.half ?? 0.32,
       height: o.height ?? 1.8,
       onGround: false,
-      stepHeight: 0.46,
+      stepHeight: 0.56,
       ignore: this,
       forPlayer: false,
     };

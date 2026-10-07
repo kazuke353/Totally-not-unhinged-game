@@ -82,6 +82,15 @@ export class NavGrid {
         let li = 0;
         for (const y of floors) {
           if (li >= LAYERS) break;
+          // buried inside another brush at this column (e.g. lower stair steps)?
+          let buried = false;
+          for (const br of tmp) {
+            if (br.min[1] < y + AGENT_H && br.max[1] > y + 0.02) {
+              buried = true;
+              break;
+            }
+          }
+          if (buried) continue;
           // clearance
           if (!this._clear(x, y, z, tmp)) continue;
           this.h[(iz * this.nx + ix) * LAYERS + li] = y;
@@ -108,7 +117,8 @@ export class NavGrid {
   }
 
   _clear(x, y, z, scratch) {
-    const mn = [x - AGENT_R, y + 0.06, z - AGENT_R], mx = [x + AGENT_R, y + AGENT_H, z + AGENT_R];
+    // anything lower than a step is fine (stairs, curbs): start the box at step height
+    const mn = [x - AGENT_R, y + STEP - 0.05, z - AGENT_R], mx = [x + AGENT_R, y + AGENT_H, z + AGENT_R];
     const arr = this.world.query(mn, mx, [], (br) => br.solid && !br.dynamic && !br.playerClip);
     for (const s of arr) {
       if (s.max[0] > mn[0] && s.min[0] < mx[0] && s.max[1] > mn[1] && s.min[1] < mx[1] && s.max[2] > mn[2] && s.min[2] < mx[2]) return false;
@@ -190,7 +200,7 @@ export class NavGrid {
   }
 
   // A*; returns array of [x,y,z] or null.
-  path(from, to, maxNodes = 5000) {
+  path(from, to, maxNodes = 12000) {
     const s = this.nodeAt(from[0], from[1], from[2]);
     const t = this.nodeAt(to[0], to[1], to[2], 3);
     if (s < 0 || t < 0) return null;

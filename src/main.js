@@ -13,6 +13,23 @@ import { createSky } from './engine/sky.js';
 import { ITEMS } from './game/entities/items.js';
 import { MAPS } from './maps/index.js';
 
+export const CHAPTERS = [
+  { id: 'outback', num: 'ONE', name: 'OUTBACK PERIMETER' },
+  { id: 'complex', num: 'TWO', name: 'SECURITY COMPLEX' },
+  { id: 'silo', num: 'THREE', name: 'SILO 7' },
+];
+// what you'd plausibly be carrying when starting a chapter from the menu
+const LOADOUTS = {
+  complex: {
+    health: 100, armor: 25, battery: 100,
+    weapons: { owned: ['fists', 'pistol', 'smg', 'grenade'], ammo: { '9mm': 80, shells: 0, rockets: 0, grenades: 2, argrenades: 2 }, clip: { pistol: 17, smg: 50, shotgun: 0, rpg: 0 }, current: 'smg', laser: true },
+  },
+  silo: {
+    health: 100, armor: 50, battery: 100,
+    weapons: { owned: ['fists', 'pistol', 'smg', 'shotgun', 'grenade'], ammo: { '9mm': 120, shells: 16, rockets: 0, grenades: 3, argrenades: 3 }, clip: { pistol: 17, smg: 50, shotgun: 8, rpg: 0 }, current: 'shotgun', laser: true },
+  },
+};
+
 const DEFAULTS = {
   sensitivity: 1,
   invertY: false,
@@ -151,6 +168,30 @@ class App {
         g.stats = { kills: 0, shots: 0, hits: 0, secrets: 0, secretsTotal: 0, time: 0, deaths: 0 };
         await g.loadMap('outback');
       });
+    });
+  }
+  chaptersUnlocked() {
+    try {
+      return Math.max(0, parseInt(localStorage.getItem('halfhop_chapters') || '0', 10) || 0);
+    } catch (e) {
+      return 0;
+    }
+  }
+  unlockChapter(mapId) {
+    const i = CHAPTERS.findIndex((c) => c.id === mapId);
+    if (i > this.chaptersUnlocked()) {
+      try {
+        localStorage.setItem('halfhop_chapters', String(i));
+      } catch (e) {}
+    }
+  }
+  async startChapter(mapId, difficulty) {
+    audio.init();
+    this.sessionDeaths = 0;
+    this.ui.clear();
+    await this._startGame(async (g) => {
+      g.difficulty = difficulty;
+      await g.loadMap(mapId, LOADOUTS[mapId] ? { carry: LOADOUTS[mapId] } : {});
     });
   }
   async continueGame() {

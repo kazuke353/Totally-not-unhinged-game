@@ -125,6 +125,7 @@ export class UI {
     const save = this.app.getSave();
     if (save) this._btn(list, 'CONTINUE', () => this.app.continueGame());
     this._btn(list, 'NEW GAME', () => this.difficultyMenu());
+    this._btn(list, 'CHAPTERS', () => this.chaptersMenu());
     this._btn(list, 'OPTIONS', () => this.optionsMenu(() => this.mainMenu()));
     this._btn(list, 'CONTROLS', () => this.controlsMenu(() => this.mainMenu()));
     this._btn(list, 'CREDITS', () => this.creditsMenu());
@@ -137,7 +138,26 @@ export class UI {
     setTimeout(() => d.remove(), 2500);
   }
 
-  difficultyMenu() {
+  chaptersMenu() {
+    this.clear();
+    this.root.classList.add('menu-bg');
+    const wrap = el('div', 'menu', this.root);
+    el('div', 'mtitle', wrap, 'CHAPTERS');
+    const list = el('div', 'mlist', wrap);
+    const unlocked = this.app.chaptersUnlocked();
+    const chapters = [
+      ['outback', 'ONE', 'OUTBACK PERIMETER', 'Sunset. A fence, a searchlight and a very bad idea.'],
+      ['complex', 'TWO', 'SECURITY COMPLEX', 'Offices, vents, dingoes in the dark.'],
+      ['silo', 'THREE', 'SILO 7', 'One missile. One gunship. One key.'],
+    ];
+    chapters.forEach(([id, num, name, desc], i) => {
+      if (i <= unlocked) this._btn(list, `CHAPTER ${num}: ${name}<small>${desc}</small>`, () => this.difficultyMenu((d) => this.app.startChapter(id, d)), 'diff');
+      else el('div', 'mbtn locked', list, `CHAPTER ${num}: ????<small>Reach it in the campaign to unlock.</small>`);
+    });
+    this._btn(list, 'BACK', () => this.mainMenu(), 'back');
+  }
+
+  difficultyMenu(onPick) {
     this.clear();
     this.root.classList.add('menu-bg');
     const wrap = el('div', 'menu', this.root);
@@ -149,7 +169,7 @@ export class UI {
       ['BIG RED', 'Hard. You are the biggest, angriest roo in the outback.'],
     ];
     opts.forEach(([n, desc], i) => {
-      const b = this._btn(list, `${n}<small>${desc}</small>`, () => this.app.newGame(i), 'diff');
+      this._btn(list, `${n}<small>${desc}</small>`, () => (onPick ? onPick(i) : this.app.newGame(i)), 'diff');
     });
     this._btn(list, 'BACK', () => this.mainMenu(), 'back');
   }

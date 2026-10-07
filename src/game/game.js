@@ -70,6 +70,7 @@ export class Game {
     const def = MAPS[mapId];
     if (!def) throw new Error('No map ' + mapId);
     this.mapId = mapId;
+    if (this.app.unlockChapter) this.app.unlockChapter(mapId);
     const map = def.build();
     this.map = map;
     const world = new World();

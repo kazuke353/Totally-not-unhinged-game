@@ -27,7 +27,7 @@ export class Player {
       height: STAND_H,
       onGround: false,
       ground: null,
-      stepHeight: 0.46,
+      stepHeight: 0.56,
       forPlayer: true,
       ignore: null,
     };

@@ -61,6 +61,7 @@ export class Hud {
     this.headshotEl = el('div', 'hud-headshot', this.root, 'HEADSHOT');
     this.deathEl = el('div', 'hud-death', this.root, '<div class="t">YOU HAVE DIED</div><div class="s">The outback mourns. Press FIRE to try again.</div>');
     this.fps = el('div', 'hud-fps', this.root);
+    this.lockEl = el('div', 'hud-lock', this.root, 'CLICK TO CAPTURE THE MOUSE');
     this.bossEl = el('div', 'hud-boss', this.root, '<div class="n"></div><div class="b"><div></div></div>');
     this.bossBar = this.bossEl.querySelector('.b div');
     this.fpsAcc = 0;
@@ -206,6 +207,8 @@ export class Hud {
     const p = game.player;
     if (!p) return;
     this.root.classList.toggle('cutscene', !!game.cutscene);
+    const inp = game.input;
+    this.lockEl.classList.toggle('on', inp.enabled && !inp.locked && !inp.lockFailed && !game.cutscene && p.alive);
     const hp = Math.ceil(p.health), ar = Math.floor(p.armor);
     if (this.last.hp !== hp) {
       this.hpBox.querySelector('.v').textContent = hp;
