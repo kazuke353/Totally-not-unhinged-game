@@ -905,6 +905,16 @@ roomSign('sign_level3', 'SILO LEVEL 3');
 roomSign('sign_commander', 'BASE COMMANDER', '#4a3a1a');
 roomSign('sign_exit', 'EXIT', '#1a7a2a');
 roomSign('sign_comms', 'COMMS', '#3a4a5a');
+def('sign_roocross', { w: 64, h: 64, uv: 'fit', mode: 'alpha' }, (p) => {
+  const g = p.ctx;
+  g.clearRect(0, 0, 64, 64);
+  g.fillStyle = '#1a1a1a';
+  g.beginPath(); g.moveTo(32, 1); g.lineTo(63, 32); g.lineTo(32, 63); g.lineTo(1, 32); g.closePath(); g.fill();
+  g.fillStyle = '#e8b818';
+  g.beginPath(); g.moveTo(32, 4); g.lineTo(60, 32); g.lineTo(32, 60); g.lineTo(4, 32); g.closePath(); g.fill();
+  drawRoo(p, 31, 33, 0.95, '#1a1a1a');
+  p.grain(6);
+});
 sign('poster_wanted', 64, 96, (p) => {
   p.fill('#d8cba0').mottle(0.12, 2, 4);
   p.text('WANTED', 32, 12, 13, '#3a1a0a');

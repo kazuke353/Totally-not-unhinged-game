@@ -87,7 +87,7 @@ export class Grenade extends Entity {
     this.removed = true;
     this.purge = true;
     this.mesh.visible = false;
-    this.game.explode(this.pos.toArray(), this.contact ? 4.5 : 5, this.contact ? 100 : 110, this.owner, 1);
+    this.game.explode(this.pos.toArray(), this.contact ? 4.5 : 5, this.def.damage ?? (this.contact ? 100 : 110), this.owner, 1);
     this.destroy();
   }
   // grenades are not persisted across saves

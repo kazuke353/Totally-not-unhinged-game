@@ -107,9 +107,40 @@ export function buildOutback() {
   for (const [x, z, s] of [[-58, 52, 1.3], [48, 56, 1.1], [-26, 8, 1.0]]) P.deadTree(b, x, z, s);
   for (const [x, z, s] of [[34, 54, 1.2], [-44, 24, 1.0], [56, 6, 0.8], [-62, 50, 1.4]]) P.boulder(b, x, z, s);
 
+  // old windmill + water tank + trough (west flats)
+  b.ent('prop', { model: 'windmill', pos: [-46, 0, 26], yaw: 0.6 });
+  b.solid(-46.6, 0, 25.4, -45.4, 0.3, 26.6, 'concrete');
+  b.solid(-41, 0, 23, -38, 3.2, 26, { side: 'water_tank', top: 'rust' });
+  b.solid(-44, 0, 29.5, -38, 0.6, 30.5, 'rust');
+  b.solid(-43.8, 0.45, 29.7, -38.2, 0.55, 30.3, 'light_blue');
+  b.ent('pickup', { item: 'ammo_9mm', pos: [-39.5, 3.2, 24.5] });
+  // ruined homestead (east flats)
+  b.air(36, 0, 32, 44, 3, 39, { floor: 'wood', wall: 'brick', ext: 'brick', roof: 'corrugated', ceil: 'wood', noCeil: true, t: 0.3 });
+  b.carve(39, 0, 38.6, 40.4, 2.2, 39.5);
+  b.carve(35.5, 1, 34, 36.5, 2.2, 36);
+  b.carve(40, 1.5, 31.5, 44.5, 3.1, 32.5);
+  b.solid(36, 2.9, 32, 40, 3.1, 36, 'corrugated', { uvScale: 1 });
+  b.solid(42.5, 0, 32, 44, 1.6, 33.5, 'wood');
+  P.crateStack(b, 37, 37.6, [[0, 0, 0, true, 'medkit'], [1, 0, 0, true, 'battery']], 0.9);
+  b.detail(43.95, 1.0, 35, 43.98, 2.4, 37, 'poster_emu');
+  b.light(40, 2.6, 35.5, { intensity: 1.0, radius: 6, color: [1, 0.7, 0.4], fixture: 'lamp_warm' });
+  // wild dingoes by the creek
+  b.ent('dingo', { pos: [26, -1.6, 43], yaw: -1.5, sleeping: true });
+  b.ent('dingo', { pos: [27.5, -1.6, 41.5], yaw: -2.2, sleeping: true });
+
   // perimeter road (east -> gate)
   b.solid(4, 0, 10, 72, 0.04, 18, 'road', { uvOffset: [0, 0.25] });
   b.solid(-4, 0, 0.05, 4, 0.04, 18, 'asphalt');
+  // kangaroo crossing sign
+  b.solid(12.95, 0, 20.95, 13.05, 2.4, 21.05, 'pipe');
+  b.detail(12.2, 2.0, 21.06, 13.8, 3.6, 21.1, 'sign_roocross');
+  b.solid(46.95, 0, 8.95, 47.05, 2.4, 9.05, 'pipe');
+  b.detail(46.2, 2.0, 8.9, 47.8, 3.6, 8.94, 'sign_roocross');
+  // road patrol
+  b.ent('soldier', { pos: [50, 0, 14], yaw: -Math.PI / 2, patrol: [[22, 0, 14], [62, 0, 14]], drop: 'ammo_9mm', idleChat: true, idleLine: 'Road patrol. Again. Nothing out here but roos and flies.' });
+  b.ent('pickup', { item: 'ammo_9mm', pos: [64, 0, 21] });
+  P.jeep(b, 64, 22, 'x');
+
   // gate boom barrier
   b.solid(4.6, 0, 9.4, 5.0, 1.1, 9.8, 'hazard');
   b.detail(-3.8, 0.95, 9.5, 4.6, 1.05, 9.7, 'hazard');

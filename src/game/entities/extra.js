@@ -79,6 +79,38 @@ function buildRadar(mat) {
   return g;
 }
 
+function buildWindmill(mat) {
+  const g = new THREE.Group();
+  const M = C('#8a8e90'), D = C('#4a4e50');
+  const parts = [];
+  // lattice tower: four tapering legs + cross braces
+  const H = 9;
+  for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    const top = [x * 0.25, H, z * 0.25], bot = [x * 1.2, 0, z * 1.2];
+    const dx = top[0] - bot[0], dz = top[2] - bot[2];
+    const len = Math.hypot(dx, H, dz);
+    parts.push(kit.cyl(0.05, 0.07, len, M, { p: [(top[0] + bot[0]) / 2, H / 2, (top[2] + bot[2]) / 2], r: [Math.atan2(dz, H), 0, -Math.atan2(dx, H)] }, 5));
+  }
+  for (let y = 1.5; y < H; y += 2.2) {
+    const w = 1.2 - (y / H) * 0.95;
+    parts.push(kit.box(w * 2, 0.05, 0.05, D, { p: [0, y, w] }), kit.box(w * 2, 0.05, 0.05, D, { p: [0, y, -w] }));
+    parts.push(kit.box(0.05, 0.05, w * 2, D, { p: [w, y, 0] }), kit.box(0.05, 0.05, w * 2, D, { p: [-w, y, 0] }));
+  }
+  parts.push(kit.box(0.5, 0.4, 0.8, D, { p: [0, H + 0.2, 0] }));
+  parts.push(kit.box(0.04, 1.2, 2.2, C('#b0b4b6'), { p: [0, H + 0.4, -1.6] }));
+  g.add(meshOf(parts, mat));
+  const fan = bone(g, 0, H + 0.25, 0.5);
+  const blades = [];
+  for (let k = 0; k < 14; k++) {
+    const a = (k / 14) * Math.PI * 2;
+    blades.push(kit.box(0.28, 1.5, 0.02, C('#c4c8ca'), { p: [Math.sin(a) * 1.0, Math.cos(a) * 1.0, 0], r: [0, 0.35, -a] }));
+  }
+  blades.push(kit.cyl(0.12, 0.12, 0.2, D, { r: [Math.PI / 2, 0, 0] }, 8));
+  fan.add(meshOf(blades, mat));
+  g.userData.fan = fan;
+  return g;
+}
+
 export class Prop extends Entity {
   spawn() {
     const g = this.game, d = this.def;
@@ -86,6 +118,7 @@ export class Prop extends Entity {
     if (d.model === 'emu') this.mesh = buildEmu(this.mat);
     else if (d.model === 'kman') this.mesh = buildKMan(this.mat);
     else if (d.model === 'radar') this.mesh = buildRadar(this.mat);
+    else if (d.model === 'windmill') this.mesh = buildWindmill(this.mat);
     else this.mesh = new THREE.Group();
     this.mesh.position.set(...d.pos);
     this.mesh.rotation.y = d.yaw || 0;
@@ -99,6 +132,7 @@ export class Prop extends Entity {
   update(dt) {
     this.t += dt;
     if (this.mesh.userData.dish) this.mesh.userData.dish.rotation.y = this.t * 0.4;
+    if (this.mesh.userData.fan) this.mesh.userData.fan.rotation.z = this.t * 1.6;
     if (this.def.model === 'emu') this.mesh.rotation.y = (this.def.yaw || 0) + Math.sin(this.t * 0.6) * 0.15;
   }
 }

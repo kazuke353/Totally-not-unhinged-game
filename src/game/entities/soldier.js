@@ -198,6 +198,7 @@ export class Soldier extends NPC {
     const p = this.game.player;
     this.state = 'combat';
     this.reaction = rand(0.35, 0.7) / this.game.diff.aggression;
+    this.warmup = 1.4; // first volley goes wide
     this.lastSeen = p.center();
     this.lastSeenTime = this.game.time;
     audio.play('soldier_alert', { pos: this.center(), volume: 0.8 });
@@ -225,6 +226,7 @@ export class Soldier extends NPC {
     const sees = this.look(dt);
     this.painK = Math.max(0, this.painK - dt * 4);
     this.recoilK = damp(this.recoilK, 0, 12, dt);
+    if (this.warmup > 0 && this.reaction <= 0) this.warmup -= dt;
 
     // grenade avoidance overrides everything
     const gr = this.grenadeThreat();
@@ -513,8 +515,9 @@ export class Soldier extends NPC {
     spread *= 1 + dist / 40;
     spread /= g.diff.accuracy;
     if (this.crouching) spread *= 0.8;
+    if (this.warmup > 0) spread *= 2.4;
     const pellets = shotgun ? 6 : 1;
-    const dmg = shotgun ? 5 : this.variant === 'commander' ? 6 : 5;
+    const dmg = shotgun ? 5 : this.variant === 'commander' ? 6 : 4;
     const o = this._shootOrigin();
     for (let i = 0; i < pellets; i++) {
       const dir = [t[0] - o[0] + rand(-1, 1) * spread * dist, t[1] - o[1] + rand(-1, 1) * spread * dist * 0.7, t[2] - o[2] + rand(-1, 1) * spread * dist];
@@ -550,7 +553,7 @@ export class Soldier extends NPC {
     const dh = Math.hypot(dx, dz);
     const tFlight = clamp(dh / 12, 0.6, 1.6);
     const vel = [dx / tFlight, (target[1] - o[1] + 0.5 * 16 * tFlight * tFlight) / tFlight, dz / tFlight];
-    g.spawnEntity({ type: 'grenade', pos: o, vel, owner: this, fuse: tFlight + rand(0.8, 1.4) });
+    g.spawnEntity({ type: 'grenade', pos: o, vel, owner: this, fuse: tFlight + rand(0.9, 1.5), damage: 70 });
     audio.play('swing', { pos: o, volume: 0.6 });
   }
   onStuck() {
