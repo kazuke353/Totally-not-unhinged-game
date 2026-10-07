@@ -663,6 +663,8 @@ export class LaunchConsole extends Entity {
       return true;
     }
     // all go!
+    g.completeObjective('turn');
+    g.completeObjective('launch');
     this.countdown = 10;
     this.lastSec = 11;
     audio.play('button', { pos: this.def.pos });

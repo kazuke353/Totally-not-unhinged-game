@@ -43,7 +43,7 @@ function chatter(game, s, key, force = false) {
   if (game.cutscene) return;
   if (!s.alive && key !== 'mandown') return;
   const now = game.time;
-  if (!force && now - chatterT < 3.5) return;
+  if (!force && now - chatterT < 5) return;
   const p = game.player;
   const b = s.body.pos;
   if (p && Math.hypot(p.body.pos.x - b.x, p.body.pos.z - b.z) > 40) return;

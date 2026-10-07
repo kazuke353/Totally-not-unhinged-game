@@ -20,6 +20,17 @@ export const DIFFICULTY = [
 
 let DYN_ID = 0;
 
+// Free GPU buffers of everything under a node (textures are shared and kept).
+function disposeTree(root) {
+  root.traverse((o) => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) {
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      for (const m of mats) m.dispose();
+    }
+  });
+}
+
 export class Game {
   constructor(app) {
     this.app = app;
@@ -144,6 +155,7 @@ export class Game {
     audio.stopAllLoops();
     audio.stopMusic(0.5);
     this.ambient = [];
+    disposeTree(this.entGroup);
     for (const e of this.entities) if (e.destroy) e.destroy();
     this.entities = [];
     this.byName.clear();
@@ -155,15 +167,18 @@ export class Game {
       this.world = null;
     }
     if (this.sky) {
+      disposeTree(this.sky);
       this.scene.remove(this.sky);
       this.sky = null;
     }
     if (this.player) {
       this.scene.remove(this.player.model.root);
+      disposeTree(this.player.model.root);
       this.player.destroy();
       this.player = null;
     }
     this.fx.clear();
+    disposeTree(this.vmScene);
     this.vmScene.clear();
     this.alarm = false;
     this.cutscene = null;
@@ -271,7 +286,16 @@ export class Game {
           if (wh && !wh.brush.dynamic) this.fx.decal(wh.point, wh.normal, 'blood', rand(0.2, 0.45));
         }
       } else this.impactFX(hit, d);
-      if (attacker === this.player) this.stats.hits++;
+      if (attacker === this.player) {
+        this.stats.hits++;
+        if (hit.entity.isNPC || hit.entity.isGunship) {
+          const now = this.time;
+          if (!this._lastTick || now - this._lastTick > 0.06) {
+            this._lastTick = now;
+            audio.play('hit_tick', { volume: hit.group === 'head' ? 0.5 : 0.3, rate: hit.group === 'head' ? 1.3 : 1 });
+          }
+        }
+      }
     } else {
       this.impactFX(hit, d);
     }

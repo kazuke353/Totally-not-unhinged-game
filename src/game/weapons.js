@@ -56,6 +56,14 @@ export class WeaponSystem {
     if (fresh && !silent) {
       // auto switch to new toys (HL style)
       this.select(id);
+      const quip = {
+        pistol: '9 millimetre pistol acquired. Stored in pouch.',
+        smg: 'Submachine gun acquired. Pouch capacity: concerning.',
+        shotgun: 'Shotgun acquired. Please do not ask how it fits.',
+        rpg: 'Rocket launcher acquired. Joey compartment reclassified as a weapons bay.',
+        grenade: 'Grenades acquired. Do not hop with the pins out.',
+      }[id];
+      if (quip) this.game.after(0.6, () => this.p.hev('weapon_' + id, quip, 9999));
     }
     return fresh;
   }
@@ -343,6 +351,7 @@ export class WeaponSystem {
     this.nextFire = Math.max(this.nextFire, 0.5);
     p.setAction('kick', 0.6);
     audio.play('swing', { pos: p.posArr(), volume: 0.8, rate: 0.8 });
+    if (Math.random() < 0.5) audio.play('chuff', { pos: p.posArr(), volume: 0.7, rate: 0.9 });
     g.after(0.17, () => this.meleeHit(48, 2.1, 0.6, 'kick', 9));
   }
   punch() {

@@ -279,6 +279,9 @@ def('beep', 0.15, (d, n, sr) => {
 def('hev_beep', 0.35, (d, n, sr) => {
   for (let i = 0; i < n; i++) { const t = i / sr; d[i] = sq(t * 1500) * 0.1 * ((t < 0.08 || (t > 0.14 && t < 0.22)) ? 1 : 0); }
 });
+def('hit_tick', 0.06, (d, n, sr) => {
+  for (let i = 0; i < n; i++) { const t = i / sr; d[i] = (Math.sin(t * 6.283 * 2800) * 0.5 + Math.sin(t * 6.283 * 4100) * 0.3) * Math.exp(-t / 0.012) * 0.6; }
+});
 def('ui_click', 0.06, (d, n, sr) => {
   for (let i = 0; i < n; i++) { const t = i / sr; d[i] = sq(t * 1800) * 0.12 * Math.exp(-t / 0.015); }
 });
