@@ -316,8 +316,9 @@ export class KangarooModel {
       this.takeoffY = this.root.position.y;
       if (s.vy > 1) this.takeoff = 1;
     }
-    // the super-hop tuck opens up on the way down so the legs are under us to land
-    if (!airborne || s.vy < -2) this.superHop = false;
+    if (!airborne) this.superHop = false;
+    // the super-hop knee tuck opens up on the way down so the legs are under us to land
+    this.tuck = damp(this.tuck || 0, this.superHop ? clamp((s.vy + 2) / 5, 0, 1) : 0, 12, dt);
     this.wasAirborne = airborne;
     this.takeoff = Math.max(0, (this.takeoff || 0) - dt * 4);
     this.moveBlend = damp(this.moveBlend, moving ? 1 : 0, 10, dt);
@@ -376,15 +377,13 @@ export class KangarooModel {
       let az = lerp(0.14, -0.46, Math.max(0, rise)) + Math.min(0, rise) * -0.04;
       let ay = lerp(0.1, 0.22, Math.max(0, rise));
       let ap = lerp(-0.15, 1.35, Math.max(0, rise));
-      if (this.superHop) {
-        az = 0.22;
-        ay = 0.42;
-        ap = 0.4;
-      }
+      az = lerp(az, 0.22, this.tuck);
+      ay = lerp(ay, 0.42, this.tuck);
+      ap = lerp(ap, 0.4, this.tuck);
       fz = lerp(fz, az, this.airBlend);
       fy = lerp(fy, ay, this.airBlend);
       footPitch = lerp(footPitch, ap, this.airBlend);
-      lean += (this.superHop ? 0.35 : rise * 0.15) * this.airBlend;
+      lean += lerp(rise * 0.15, 0.35, this.tuck) * this.airBlend;
       if (this.takeoff > 0) {
         // spring off: legs fully extended straight down/back
         fz = lerp(fz, -0.3, this.takeoff);

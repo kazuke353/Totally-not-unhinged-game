@@ -57,6 +57,7 @@ export class Player {
     this.camDist = 2.6;
     this.camPos = new THREE.Vector3();
     this.eyeY = 1.45;
+    this.chargeGrace = 0;
     this.airTuck = 0; // how far a mid-air crouch lifted our feet
     this.tuckVis = 0; // visual offset easing the model after that lift
     this.aimPoint = new THREE.Vector3();
@@ -427,6 +428,8 @@ export class Player {
         // no room to stand: stay tucked
       } else if (!b.onGround && g.world.boxFree([b.pos.x - b.half, b.pos.y - 0.7, b.pos.z - b.half], [b.pos.x + b.half, b.pos.y - 0.7 + STAND_H, b.pos.z + b.half], this, true)) {
         b.pos.y -= 0.7;
+        this.eyeY += 0.7;
+        this.tuckVis += 0.7;
         this.crouched = false;
         b.height = STAND_H;
       }
@@ -436,13 +439,16 @@ export class Player {
       this.crouchTime += dt;
       const prev = this.charge;
       this.charge = clamp((this.crouchTime - 0.15) / 0.5, 0, 1);
+      this.chargeGrace = 0.2;
       if (prev < 1 && this.charge >= 1 && !this.chargeSoundPlayed) {
         audio.play('beep', { volume: 0.25, rate: 1.4 });
         this.chargeSoundPlayed = true;
       }
     } else if (!this.crouched || !headroom) {
       this.crouchTime = 0;
-      if (b.onGround) this.charge = 0;
+      // brief grace so letting go of C just before pressing Space still super hops
+      this.chargeGrace -= dt;
+      if (b.onGround && (this.chargeGrace <= 0 || !headroom)) this.charge = 0;
       this.chargeSoundPlayed = false;
     }
 
@@ -556,7 +562,7 @@ export class Player {
   _jump(wx, wz, wl) {
     const b = this.body;
     const g = this.game;
-    if (this.crouched && this.charge > 0.05) {
+    if ((this.crouched || this.chargeGrace > 0) && this.charge > 0.05) {
       // SUPER HOP
       const c = this.charge;
       b.vel.y = lerp(SUPER_V_MIN, SUPER_V_MAX, c);
@@ -707,6 +713,7 @@ export class Player {
     // on the ground it follows tightly (stairs, crouching).
     const airborne = this.view === 'third' && !b.onGround && !this.onLadder && this.alive && !g.noclip;
     if (Math.abs(pv.y - pivotY) > 6) pv.y = pivotY; // teleports / level loads
+    else if (this.view === 'first' && !b.onGround) pv.y = pivotY; // the eye rides the jump exactly
     else {
       pv.y = damp(pv.y, pivotY, airborne ? 3.5 : 14, dt);
       // keep a trailing pivot inside our own (always empty) collision hull so
