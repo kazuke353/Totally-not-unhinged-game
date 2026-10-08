@@ -70,8 +70,13 @@ class ParticlePool {
   update(dt, world) {
     let w = 0;
     for (let i = 0; i < this.n; i++) {
-      const life = this.life[i] + dt;
-      if (life >= this.max[i]) continue;
+      let life = this.life[i] + dt;
+      if (life >= this.max[i]) {
+        // anything spawned since the last update is drawn at least once
+        // (per-frame sprites use a near-zero life)
+        if (this.life[i] > 0) continue;
+        life = this.max[i];
+      }
       // compact
       if (w !== i) {
         this.pos[w * 3] = this.pos[i * 3]; this.pos[w * 3 + 1] = this.pos[i * 3 + 1]; this.pos[w * 3 + 2] = this.pos[i * 3 + 2];
@@ -225,7 +230,8 @@ export class FX {
 
   // ---------------------------------------------------------------- dlights
   dlight(pos, color, radius, life = 0.08, follow = null) {
-    const d = { pos: [pos[0], pos[1], pos[2]], color, radius, life, max: life, follow };
+    // life <= 0: light this frame only (re-added every frame by its owner)
+    const d = { pos: [pos[0], pos[1], pos[2]], color, radius, life, max: life, follow, once: life <= 0 };
     this.dlights.push(d);
     return d;
   }
@@ -397,10 +403,12 @@ export class FX {
     this.add.update(dt, world);
     // dlights
     for (const d of this.dlights) {
-      d.life -= dt;
+      if (d.once) d.life = d.shown ? 0 : 1e-6, d.shown = true;
+      else d.life -= dt;
       if (d.follow) {
         const p = d.follow();
         if (p) { d.pos[0] = p[0]; d.pos[1] = p[1]; d.pos[2] = p[2]; }
+        else d.life = 0; // owner is gone
       }
     }
     this.dlights = this.dlights.filter((d) => d.life > 0);

@@ -5,6 +5,8 @@ import { kit, C, meshOf, bone, entityMaterial } from '../modelkit.js';
 import { audio } from '../../engine/audio.js';
 import { approachAngle, clamp, rand, wrapAngle } from '../../engine/util.js';
 
+const _hp = new THREE.Vector3();
+
 export class Turret extends Entity {
   constructor(game, d) {
     super(game, d);
@@ -75,8 +77,9 @@ export class Turret extends Entity {
     this._pose();
   }
   headPos() {
-    const p = this.pos;
-    return [p[0], p[1] + (this.ceiling ? -0.55 : 1.0), p[2]];
+    // where the head is drawn: it rises/lowers as it deploys and falls with a kicked-over base
+    this.head.getWorldPosition(_hp);
+    return [_hp.x, _hp.y, _hp.z];
   }
   center() {
     return this.headPos();

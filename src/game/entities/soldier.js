@@ -536,6 +536,7 @@ export class Soldier extends NPC {
   _muzzle() {
     const mz = this.model.gun.userData.muzzle;
     if (mz) {
+      this.mesh.position.copy(this.body.pos); // we fire before this frame's _sync
       const v = new THREE.Vector3();
       mz.getWorldPosition(v);
       return [v.x, v.y, v.z];
@@ -604,7 +605,7 @@ export class Soldier extends NPC {
     const f = this.forward();
     const back = d[0] * f[0] + d[2] * f[2] > 0 ? -1 : 1;
     m.root.rotation.set(back * -e * (Math.PI / 2 - 0.1), this.yaw, 0, 'YXZ');
-    m.root.position.y = this.body.pos.y + e * 0.12;
+    this.deathLift = e * 0.12; // applied in _sync
     m.armR.rotation.x = -1.5 * e;
     m.armL.rotation.x = -1.2 * e;
     for (const L of m.legs) {
@@ -625,6 +626,9 @@ export class Soldier extends NPC {
   }
   _sync(dt) {
     super._sync(dt);
-    if (!this.alive) this.mesh.position.y = this.body.pos.y + (this.model.root.rotation.x ? 0.12 : 0);
+    if (!this.alive) this.mesh.position.y = this.body.pos.y + (this.deathLift || 0);
+  }
+  visHeight() {
+    return this.body.height - 0.42 * this.crouch; // hips drop 0.42 when crouched
   }
 }

@@ -68,9 +68,13 @@ export class NPC extends Entity {
     const b = this.body;
     return [b.pos.x, b.pos.y + b.height * 0.6, b.pos.z];
   }
+  // how tall we're drawn right now (crouching soldiers override this)
+  visHeight() {
+    return this.body.height;
+  }
   eye() {
     const b = this.body;
-    return [b.pos.x, b.pos.y + b.height * 0.9, b.pos.z];
+    return [b.pos.x, b.pos.y + this.visHeight() * 0.9, b.pos.z];
   }
   radius() {
     return this.body.half;
@@ -78,7 +82,7 @@ export class NPC extends Entity {
   getHitboxes() {
     if (!this.alive) return null;
     const b = this.body;
-    const h = b.height;
+    const h = this.visHeight();
     const hx = b.half;
     return [
       { min: [b.pos.x - 0.14, b.pos.y + h * 0.82, b.pos.z - 0.14], max: [b.pos.x + 0.14, b.pos.y + h * 1.0, b.pos.z + 0.14], group: 'head' },

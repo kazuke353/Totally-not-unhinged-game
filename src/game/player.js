@@ -15,7 +15,7 @@ const GRAVITY = 20;
 const HOP_V = 7.2, SUPER_V_MIN = 10, SUPER_V_MAX = 13.8;
 const LADDER_SPEED = 3.6;
 
-const _f = new THREE.Vector3(), _r = new THREE.Vector3(), _tmp = new THREE.Vector3();
+const _f = new THREE.Vector3(), _r = new THREE.Vector3(), _tmp = new THREE.Vector3(), _f2 = new THREE.Vector3();
 
 export class Player {
   constructor(game) {
@@ -57,6 +57,8 @@ export class Player {
     this.camDist = 2.6;
     this.camPos = new THREE.Vector3();
     this.eyeY = 1.45;
+    this.airTuck = 0; // how far a mid-air crouch lifted our feet
+    this.tuckVis = 0; // visual offset easing the model after that lift
     this.aimPoint = new THREE.Vector3();
     this.aimEntity = null;
     this.punch = new THREE.Vector2(); // view punch (recoil)
@@ -170,6 +172,9 @@ export class Player {
   }
   muzzlePos() {
     if (this.view === 'first') return this.viewModel.muzzleWorld(this.game.app.renderer, this);
+    // weapons fire before _animate: place the model at this frame's position first
+    const b = this.body.pos;
+    this.model.root.position.set(b.x, b.y + this.tuckVis, b.z);
     this.model.muzzleWorld(_tmp);
     return [_tmp.x, _tmp.y, _tmp.z];
   }
@@ -386,19 +391,40 @@ export class Player {
 
     // crouch & super-hop charge
     const wantCrouch = !this.frozen && input.is('crouch');
+    if (b.onGround) this.airTuck = 0;
     if (wantCrouch && !this.crouched) {
       this.crouched = true;
       b.height = CROUCH_H;
+      this.airTuck = 0;
       if (!b.onGround) {
         // tuck legs mid-air: lift the hull bottom (HL duck-jump)
-        const lift = STAND_H - CROUCH_H;
-        if (g.world.boxFree([b.pos.x - b.half, b.pos.y + lift, b.pos.z - b.half], [b.pos.x + b.half, b.pos.y + lift + CROUCH_H, b.pos.z + b.half], this, true)) b.pos.y += lift * 0.8;
+        const lift = (STAND_H - CROUCH_H) * 0.8;
+        if (g.world.boxFree([b.pos.x - b.half, b.pos.y + lift, b.pos.z - b.half], [b.pos.x + b.half, b.pos.y + lift + CROUCH_H, b.pos.z + b.half], this, true)) {
+          b.pos.y += lift;
+          this.airTuck = lift;
+          // the head and the drawn body stay put; only the feet come up
+          this.eyeY -= lift;
+          this.tuckVis -= lift;
+        }
       }
     } else if (!wantCrouch && this.crouched) {
-      // stand up if there's room
-      if (g.world.boxFree([b.pos.x - b.half, b.pos.y, b.pos.z - b.half], [b.pos.x + b.half, b.pos.y + STAND_H, b.pos.z + b.half], this, true)) {
+      const standFree = (y) => g.world.boxFree([b.pos.x - b.half, y, b.pos.z - b.half], [b.pos.x + b.half, y + STAND_H, b.pos.z + b.half], this, true);
+      let drop = -1;
+      if (!b.onGround && this.airTuck > 0) {
+        // un-tuck mid-air (HL unduck): the feet go back down as far as there's
+        // room, so tapping crouch can't ratchet us upward
+        for (let d = this.airTuck; d > 0.001; d -= 0.07) if (standFree(b.pos.y - d)) { drop = d; break; }
+        if (drop < 0 && standFree(b.pos.y)) drop = 0;
+      } else if (standFree(b.pos.y)) drop = 0;
+      if (drop >= 0) {
+        b.pos.y -= drop;
+        this.eyeY += drop;
+        this.tuckVis += drop;
+        this.airTuck = 0;
         this.crouched = false;
         b.height = STAND_H;
+      } else if (this.airTuck > 0) {
+        // no room to stand: stay tucked
       } else if (!b.onGround && g.world.boxFree([b.pos.x - b.half, b.pos.y - 0.7, b.pos.z - b.half], [b.pos.x + b.half, b.pos.y - 0.7 + STAND_H, b.pos.z + b.half], this, true)) {
         b.pos.y -= 0.7;
         this.crouched = false;
@@ -644,7 +670,9 @@ export class Player {
     this.model.setLight([L[0] * 0.8 + 0.1, L[1] * 0.8 + 0.09, L[2] * 0.8 + 0.08], [L[0] * 0.55 + 0.06, L[1] * 0.55 + 0.05, L[2] * 0.55 + 0.05]);
     this.viewModel.setLight(L);
     const b = this.body;
-    this.model.root.position.set(b.pos.x, b.pos.y, b.pos.z);
+    // mid-air tucks move the hull instantly; the drawn kangaroo eases after it
+    this.tuckVis = damp(this.tuckVis, 0, 12, dt);
+    this.model.root.position.set(b.pos.x, b.pos.y + this.tuckVis, b.pos.z);
     const sh = this.speedH();
     const fv = this.forwardVec();
     this.model.update(dt, {
@@ -681,9 +709,12 @@ export class Player {
     if (Math.abs(pv.y - pivotY) > 6) pv.y = pivotY; // teleports / level loads
     else {
       pv.y = damp(pv.y, pivotY, airborne ? 3.5 : 14, dt);
-      // keep the pivot inside our own (always empty) collision hull so the
-      // camera ray never starts inside a ledge we just hopped onto
-      pv.y = clamp(pv.y, b.pos.y + 0.15, b.pos.y + b.height - 0.05);
+      // keep a trailing pivot inside our own (always empty) collision hull so
+      // the camera ray never starts inside a ledge we just hopped onto. The
+      // hull shrinks the instant we crouch while eyeY eases down, so the cap
+      // follows eyeY; on the ground it's looser so stairs stay smooth.
+      const top = Math.max(b.height - 0.05, this.eyeY) + (airborne ? 0 : 0.45);
+      pv.y = clamp(pv.y, b.pos.y + 0.15, b.pos.y + top);
     }
     const shake = g.shake;
     const sx = shake > 0 ? (Math.random() - 0.5) * shake * 0.08 : 0;
@@ -728,10 +759,14 @@ export class Player {
         [shoulder, lift, wantDist],
         [shoulder * 0.45, lift * 0.25, wantDist],
         [0.15, -0.05, wantDist * 0.8],
+        // level with the pivot, ignoring pitch: in a low duct, looking up or
+        // down would otherwise push the camera into the floor or ceiling
+        [0.15, 0, wantDist * 0.8, true],
       ];
+      const flatBack = _f2.set(-Math.sin(yaw), 0, -Math.cos(yaw));
       let best = null;
-      for (const [sh, li, wd] of cands) {
-        const want = _tmp.set(pv.x, pv.y, pv.z).addScaledVector(fwd, -wd).addScaledVector(right, sh);
+      for (const [sh, li, wd, flat] of cands) {
+        const want = _tmp.set(pv.x, pv.y, pv.z).addScaledVector(flat ? flatBack : fwd, -wd).addScaledVector(right, sh);
         want.y += li;
         const dir = want.clone().sub(pv);
         const len = dir.length();

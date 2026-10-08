@@ -77,9 +77,10 @@ export class Dingo extends NPC {
     if (!this.alive) return null;
     const b = this.body.pos;
     const f = this.forward();
+    const dy = this.sleeping ? 0.3 : 0; // curled up on the ground
     return [
-      { min: [b.x + f[0] * 0.45 - 0.13, b.y + 0.5, b.z + f[2] * 0.45 - 0.13], max: [b.x + f[0] * 0.45 + 0.13, b.y + 0.82, b.z + f[2] * 0.45 + 0.13], group: 'head' },
-      { min: [b.x - 0.32, b.y + 0.2, b.z - 0.32], max: [b.x + 0.32, b.y + 0.75, b.z + 0.32], group: 'body' },
+      { min: [b.x + f[0] * 0.45 - 0.13, b.y + 0.5 - dy, b.z + f[2] * 0.45 - 0.13], max: [b.x + f[0] * 0.45 + 0.13, b.y + 0.82 - dy, b.z + f[2] * 0.45 + 0.13], group: 'head' },
+      { min: [b.x - 0.32, b.y + Math.max(0.02, 0.2 - dy), b.z - 0.32], max: [b.x + 0.32, b.y + 0.75 - dy, b.z + 0.32], group: 'body' },
     ];
   }
   alertTo(pos) {

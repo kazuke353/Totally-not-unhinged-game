@@ -20,6 +20,7 @@ const LENS = C('#5a9ab8');
 
 export const HIP_Y = 0.62;
 const L_THIGH = 0.32, L_SHIN = 0.37;
+const FOOT_LEN = 0.44; // ankle to claw tip
 const L_UPPER = 0.16, L_FORE = 0.15;
 
 const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3();
@@ -311,8 +312,12 @@ export class KangarooModel {
 
     const moving = s.onGround && s.speed > 0.6;
     const airborne = !s.onGround && !s.climbing;
-    if (airborne && !this.wasAirborne && s.vy > 1) this.takeoff = 1;
-    if (!airborne) this.superHop = false;
+    if (airborne && !this.wasAirborne) {
+      this.takeoffY = this.root.position.y;
+      if (s.vy > 1) this.takeoff = 1;
+    }
+    // the super-hop tuck opens up on the way down so the legs are under us to land
+    if (!airborne || s.vy < -2) this.superHop = false;
     this.wasAirborne = airborne;
     this.takeoff = Math.max(0, (this.takeoff || 0) - dt * 4);
     this.moveBlend = damp(this.moveBlend, moving ? 1 : 0, 10, dt);
@@ -349,7 +354,7 @@ export class KangarooModel {
     let hipDrop = -this.crouchBlend * 0.22 - this.landSquash * 0.1;
     let chestAbs = -s.pitch * 0.85;
     let tailBase = lerp(-0.62, -0.18, Math.max(this.moveBlend, this.airBlend));
-    tailBase -= this.crouchBlend * 0.18;
+    tailBase -= this.crouchBlend * 0.08;
     if (moving) tailBase += Math.sin((ph + 0.15) * Math.PI * 2) * 0.12;
     if (this.airBlend > 0.01) tailBase += clamp(-s.vy * 0.03, -0.25, 0.25) * this.airBlend;
 
@@ -491,7 +496,7 @@ export class KangarooModel {
     this.ears[1].rotation.set(-0.25 - earFlop, 0, 0.22);
 
     // tail chain
-    const tailCurl = [tailBase, 0.16 + this.crouchBlend * 0.15, 0.14, 0.1];
+    const tailCurl = [tailBase, 0.16 + this.crouchBlend * 0.15, 0.14 + this.crouchBlend * 0.08, 0.1 + this.crouchBlend * 0.08];
     for (let i = 0; i < 4; i++) {
       const wag = Math.sin(t * 1.5 - i * 0.6) * 0.04 * (1 - this.moveBlend);
       this.tail[i].rotation.x = tailCurl[i] + (i > 0 ? Math.sin(ph * Math.PI * 2 - i) * 0.06 * this.moveBlend : 0);
@@ -505,6 +510,12 @@ export class KangarooModel {
 
     // legs IK
     this.root.updateMatrixWorld(true);
+    // how far the floor we stand on (or just jumped from) is below the root
+    let clearance = 0;
+    if (airborne) {
+      const lift = this.root.position.y - (this.takeoffY ?? this.root.position.y);
+      clearance = lift < -0.05 ? 9 : Math.max(0, lift);
+    }
     const tmp = this._tmp;
     for (const L of this.legs) {
       const hip = _hipTmp.copy(L.hip);
@@ -513,11 +524,18 @@ export class KangarooModel {
       // undo the body bob for planted feet: feet targets are in ground space
       const ankle = tmp.tgt.set(0.12 * L.s + fwide * L.s, fy - this.body.position.y * (moving && ph < contact ? 1 : 0), fz);
       if (a === 'kick') ankle.y = fy;
+      // keep the long hind feet out of the floor: near the ground the ankle
+      // can't sit below it and the toes can only point down as far as the
+      // ankle's height allows (push-off: the toe is the last thing to leave)
+      const aboveFloor = this.body.position.y + ankle.y * this.body.scale.y + clearance;
+      if (aboveFloor < 0.05) ankle.y += (0.05 - aboveFloor) / this.body.scale.y;
       solve2(hip, ankle, L_THIGH, L_SHIN, FWD, tmp.knee, tmp.ank);
       aim(L.thigh, hip, tmp.knee);
       aim(L.shin, tmp.knee, tmp.ank);
       L.foot.position.copy(tmp.ank);
-      L.foot.rotation.set(footPitch, 0, 0);
+      const ankH = this.body.position.y + tmp.ank.y * this.body.scale.y + clearance;
+      const maxPitch = Math.asin(clamp((ankH - 0.05) / FOOT_LEN, 0, 1));
+      L.foot.rotation.set(Math.min(footPitch, maxPitch), 0, 0);
     }
     // arms IK (chest space)
     for (let i = 0; i < 2; i++) {
@@ -543,7 +561,9 @@ export class KangarooModel {
     const k = Math.min(1, this.deadT / 0.7);
     const e = 1 - (1 - k) * (1 - k);
     this.root.rotation.z = e * 1.45;
-    this.body.position.y = e * 0.18;
+    // lift in world space (root is re-placed at the feet every frame)
+    this.root.position.y += e * 0.18;
+    this.body.position.y = 0;
     this.body.scale.set(1, 1, 1);
     this.torso.rotation.x = 0.2;
     this.chest.rotation.x = 0.1;

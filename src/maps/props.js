@@ -158,7 +158,10 @@ export function waterTower(b, x, z, h = 10, y = 0) {
   // walkway
   b.solid(x - s - 1, y + h - 0.2, z - s - 1, x + s + 1, y + h, z + s + 1, { top: 'grate', side: 'metal_floor' }, { castShadow: true });
   b.solid(x - s, y + h, z - s, x + s, y + h + 5, z + s, 'water_tank');
-  b.solid(x - s - 0.2, y + h + 5, z - s - 0.2, x + s + 0.2, y + h + 5.3, z + s + 0.2, 'rust');
+  // tank cap; its lip is notched over the upper ladder so you can climb past it
+  b.solid(x - s - 0.2, y + h + 5, z - s - 0.2, x + s + 0.2, y + h + 5.3, z + s, 'rust');
+  b.solid(x - s - 0.2, y + h + 5, z + s, x - 0.85, y + h + 5.3, z + s + 0.2, 'rust');
+  b.solid(x + 0.85, y + h + 5, z + s, x + s + 0.2, y + h + 5.3, z + s + 0.2, 'rust');
   railingX(b, x - s - 1, x + s + 1, z - s - 0.95, y + h);
   railingZ(b, z - s - 1, z + s + 1, x + s + 0.95, y + h);
   railingZ(b, z - s - 1, z + s + 1, x - s - 0.95, y + h);
