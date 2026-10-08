@@ -307,9 +307,14 @@ export class KangarooModel {
     if (s.dead) return this._dead(dt, s);
     this.deadT = 0;
     this.root.rotation.z = 0;
-    this.root.position.y = 0;
+    this.root.rotation.x = 0;
 
     const moving = s.onGround && s.speed > 0.6;
+    const airborne = !s.onGround && !s.climbing;
+    if (airborne && !this.wasAirborne && s.vy > 1) this.takeoff = 1;
+    if (!airborne) this.superHop = false;
+    this.wasAirborne = airborne;
+    this.takeoff = Math.max(0, (this.takeoff || 0) - dt * 4);
     this.moveBlend = damp(this.moveBlend, moving ? 1 : 0, 10, dt);
     this.airBlend = damp(this.airBlend, s.onGround || s.climbing ? 0 : 1, 14, dt);
     this.crouchBlend = damp(this.crouchBlend, s.crouch ? 1 : 0, 12, dt);
@@ -334,6 +339,8 @@ export class KangarooModel {
     }
     const hopY = bodyY * this.moveBlend * (1 - this.crouchBlend * 0.7);
     this.body.position.y = hopY - this.landSquash * 0.12;
+    const stretch = this.takeoff * 0.1;
+    this.body.scale.set(1 - stretch * 0.4, 1 + stretch, 1 - stretch * 0.4);
 
     // posture
     const breathe = Math.sin(t * 2.2) * 0.015;
@@ -356,14 +363,29 @@ export class KangarooModel {
       fy = 0.05 + Math.sin(k * Math.PI) * 0.12;
       footPitch = legPhase < 0 ? 0.9 : 0.2;
     }
-    // airborne (real jump)
+    // airborne (real jump): legs trail back on the way up, swing under the
+    // body to land; a super hop tucks the knees up to the chest
     if (this.airBlend > 0.01) {
-      const rising = s.vy > 0;
-      const az = rising ? -0.36 : 0.08;
-      const ay = rising ? 0.12 : 0.18;
+      // 1 while rising fast -> 0 at the apex -> -1 falling fast
+      const rise = clamp(s.vy / 7, -1, 1);
+      let az = lerp(0.14, -0.46, Math.max(0, rise)) + Math.min(0, rise) * -0.04;
+      let ay = lerp(0.1, 0.22, Math.max(0, rise));
+      let ap = lerp(-0.15, 1.35, Math.max(0, rise));
+      if (this.superHop) {
+        az = 0.22;
+        ay = 0.42;
+        ap = 0.4;
+      }
       fz = lerp(fz, az, this.airBlend);
       fy = lerp(fy, ay, this.airBlend);
-      footPitch = lerp(footPitch, rising ? 1.1 : -0.2, this.airBlend);
+      footPitch = lerp(footPitch, ap, this.airBlend);
+      lean += (this.superHop ? 0.35 : rise * 0.15) * this.airBlend;
+      if (this.takeoff > 0) {
+        // spring off: legs fully extended straight down/back
+        fz = lerp(fz, -0.3, this.takeoff);
+        fy = lerp(fy, -0.25, this.takeoff);
+        footPitch = lerp(footPitch, 1.4, this.takeoff);
+      }
     }
     // crouch: feet forward, very bent
     fz = lerp(fz, -0.06, this.crouchBlend);
@@ -521,7 +543,8 @@ export class KangarooModel {
     const k = Math.min(1, this.deadT / 0.7);
     const e = 1 - (1 - k) * (1 - k);
     this.root.rotation.z = e * 1.45;
-    this.root.position.y = e * 0.18;
+    this.body.position.y = e * 0.18;
+    this.body.scale.set(1, 1, 1);
     this.torso.rotation.x = 0.2;
     this.chest.rotation.x = 0.1;
     this.head.rotation.x = 0.4 * e;

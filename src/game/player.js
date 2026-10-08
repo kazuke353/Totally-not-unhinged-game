@@ -548,6 +548,7 @@ export class Player {
       this.charge = 0;
       this.crouchTime = 0;
       audio.play('superhop', { pos: this.posArr(), volume: 0.8 });
+      this.model.superHop = true;
       g.fx.puff([b.pos.x, b.pos.y + 0.05, b.pos.z], [0, 1, 0], [0.6, 0.45, 0.35], 6, 0.5);
       g.noise(this.posArr(), 10, this);
       this.game.stats.superHops = (this.game.stats.superHops || 0) + 1;
@@ -674,7 +675,16 @@ export class Player {
     const pv = this._pivot || (this._pivot = new THREE.Vector3(b.pos.x, pivotY, b.pos.z));
     pv.x = b.pos.x;
     pv.z = b.pos.z;
-    pv.y = Math.abs(pv.y - pivotY) > 1.5 ? pivotY : damp(pv.y, pivotY, 18, dt);
+    // While airborne the camera trails the jump so the hop reads on screen;
+    // on the ground it follows tightly (stairs, crouching).
+    const airborne = this.view === 'third' && !b.onGround && !this.onLadder && this.alive && !g.noclip;
+    if (Math.abs(pv.y - pivotY) > 6) pv.y = pivotY; // teleports / level loads
+    else {
+      pv.y = damp(pv.y, pivotY, airborne ? 3.5 : 14, dt);
+      // keep the pivot inside our own (always empty) collision hull so the
+      // camera ray never starts inside a ledge we just hopped onto
+      pv.y = clamp(pv.y, b.pos.y + 0.15, b.pos.y + b.height - 0.05);
+    }
     const shake = g.shake;
     const sx = shake > 0 ? (Math.random() - 0.5) * shake * 0.08 : 0;
     const sy2 = shake > 0 ? (Math.random() - 0.5) * shake * 0.08 : 0;
